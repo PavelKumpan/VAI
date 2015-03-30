@@ -5,6 +5,7 @@ class Node:
         self.descendants = []
         self.value
         self.state = (4, 5, 1)
+        self.level = 0
 
 
 

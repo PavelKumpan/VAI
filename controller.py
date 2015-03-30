@@ -11,13 +11,11 @@ class Controller:
         self.opponent = opponent.Opponent()
         self.intelligence = intelligence.Intelligence()
 
+        self.player = []
 
     def click(self, x, y, player):
-        if self.model.player_click(x, y, player):
-            self.view.render(self.model.data)
+        self.model.player_click(x, y, player)
+        self.view.render(self.model.data)
+        self.player.append((x, y, player))
 
-            if player == 1:
-                m = self.opponent.move()
-                self.click(m[0], m[1], 2)
-
-        print(self.intelligence.test(self.model.data, 5))
+        print(self.intelligence.testPlayState(self.player, 5))

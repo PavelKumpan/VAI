@@ -18,6 +18,8 @@ class View:
     playerColors = ["#FF0000", "#0000FF"]   # colors of player marks
     top = 50
 
+    player = 1
+
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
@@ -40,9 +42,11 @@ class View:
 
         if hasattr(self.controller_click, '__call__'):
             try:
-                self.controller_click(x, y, 1)
+                self.controller_click(x, y, self.player)
             finally:
                 pass
+
+        self.player = 1 if self.player == 2 else 2
 
     def set_callback(self, func):
         self.controller_click = func

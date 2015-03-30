@@ -1,104 +1,69 @@
+import node
+import critic
+
 class Intelligence:
 
     open = []
     closed = []
 
     def __init__(self):
-        pass
+        self.critic = critic.Critic()
 
     def expand(self, graph):
         pass
 
-    '''
-    Alpha-Beta tree prunning
-    '''
-    def prunning(self, alpha, beta, graph):
-        pass
-
-    def test(self, playground, n):
+    def alphabeta(self, alpha, beta, node):
         '''
-        Check if one of players has N marks in one line
-        :type playground: list
-        :type n: int
+        :type node node.Node
         '''
+        if node.level == 0:
+            alpha = 2**15
+            beta = -2**15
 
-        playerA = 0
-        playerB = 0
+        if len(node.descendants) == 0:  # leaf
+            return self.rating(node.state)
 
-        height = len(playground)
-        width = len(playground[0])
+        i = 0
+        all = []
 
-        # horizontal searching
-        for i in range(0, height):
-            for j in range(0, width):
-                if playground[i][j] == 1:   # player A has this cell
-                    playerA += 1
-                    playerB = 0
-                elif playground[i][j] == 2:
-                    playerA = 0
-                    playerB += 1
+        for i in range(0, len(node.descendants)):
+            alpha = max(alpha, max(all))
+            beta = min(beta, min(all))
+            all.append(self.alphabeta(alpha, beta, node.descendants[i]))
 
-                if playerA >= n:
-                    return 1
-                elif playerB >= n:
-                    return 2
+            if beta > alpha and node.type == 'OR':
+                return alpha
+            elif beta < alpha and node.type == 'AND':
+                return beta
 
-            playerB = 0
-            playerA = 0
+        return alpha if (node.type == 'OR') else beta
 
-        # vertical searching
-        for j in range(0, width):
-            for i in range(0, height):
-                if playground[i][j] == 1:   # player A has this cell
-                    playerA += 1
-                    playerB = 0
-                elif playground[i][j] == 2:
-                    playerA = 0
-                    playerB += 1
+    def testPlayState(self, playState, n):
+        minX = 2**15
+        minY = 2**15
+        maxX = 0
+        maxY = 0
 
-                if playerA >= n:
-                    return 1
-                elif playerB >= n:
-                    return 2
+        for cell in playState:
+            minX = min(minX, cell[0])
+            minY = min(minY, cell[1])
+            maxX = max(maxX, cell[0])
+            maxY = max(maxY, cell[1])
 
-            playerB = 0
-            playerA = 0
+        minX = min(minX - 2, 0)
+        minY = min(minY - 2, 0)
+        minX = min(minX + 2, 0)
+        minY = min(minY + 2, 0)
 
-        # diagonal searching
-        for i in range(0, height):
-            for j in range(i, -1, -1):
+        width = maxX - minX + 1
+        height = maxY - minY + 1
 
-                if playground[i - j][j] == 1:   # player A has this cell
-                    playerA += 1
-                    playerB = 0
-                elif playground[i - j][j] == 2:
-                    playerA = 0
-                    playerB += 1
+        width = max(width, height)
+        height = max(width, height)
 
-                if playerA >= n:
-                    return 1
-                elif playerB >= n:
-                    return 2
+        playground = [[0 for x in range(width)] for y in range(height)]
 
-            playerB = 0
-            playerA = 0
+        for cell in playState:
+            playground[cell[0] - minX][cell[1] - minY] = cell[2]
 
-        # diagonal searching
-        for i in range(0, height):
-            for j in range(width - 1 - i, width - 1):
-                if playground[i - (width - 1 - j)][j] == 1:   # player A has this cell
-                    playerA += 1
-                    playerB = 0
-                elif playground[i - (width - 1 - j)][j] == 2:
-                    playerA = 0
-                    playerB += 1
-
-                if playerA >= n:
-                    return 1
-                elif playerB >= n:
-                    return 2
-
-            playerB = 0
-            playerA = 0
-
-        return 0
+        return self.critic.test(playground, n)
