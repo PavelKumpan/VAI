@@ -1,21 +1,30 @@
 from tkinter import *
 import math
 
+'''
+View.py
+------
+
+This module is used to render graphical user interface.
+'''
 
 class View:
+    cellWidth = 20                          # pixel width of grid cell
+    lineColor = "#000000"                   # color of grid line
+    lineWidth = 2                           # pixel width of grid line (this width is ad to cellWidth)
+    backgroundColor = "#FFFFFF"             # color of window background
+    markSize = 0.5                          # width of mark in % of cell (0.5 = half of cell)
+    markLineWidth = 3                       # width of mark line
+    playerColors = ["#FF0000", "#0000FF"]   # colors of player marks
+    top = 50
+
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
-        self.cellWidth = 20     # px
-        self.lineColor = "#000000"
-        self.lineWidth = 2
-        self.backgroundColor = "#FFFFFF"
-        self.markSize = 0.5
-        self.markWidth = 3
-        self.playerColors = ["#FF0000", "#0000FF"];
+
+
         self.width = self.cols * self.cellWidth + (self.cols - 1) * self.lineWidth
         self.height = self.rows * self.cellWidth + (self.rows - 1) * self.lineWidth
-        self.top = 50;
         self.master = Tk()
         self.canvas = Canvas(self.master, width=self.width, height=self.height+self.top)
         self.canvas.pack()
@@ -26,11 +35,9 @@ class View:
     def click(self, event):
         x = event.x
         y = event.y - self.top
-        x = math.floor(x / (self.cellWidth + self.lineWidth))
-        y = math.floor(y / (self.cellWidth + self.lineWidth))
+        x //= self.cellWidth + self.lineWidth
+        y //= self.cellWidth + self.lineWidth
 
-        print(x)
-        print(y)
         if hasattr(self.controller_click, '__call__'):
             try:
                 self.controller_click(x, y, 1)
@@ -69,7 +76,7 @@ class View:
         y = self.top + (v) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2;
 
         if(type == 1):
-            self.canvas.create_line(x - self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x + self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, fill=self.playerColors[type - 1], width=self.markWidth)
-            self.canvas.create_line(x + self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x - self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, fill=self.playerColors[type - 1], width=self.markWidth)
+            self.canvas.create_line(x - self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x + self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, fill=self.playerColors[type - 1], width=self.markLineWidth)
+            self.canvas.create_line(x + self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x - self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, fill=self.playerColors[type - 1], width=self.markLineWidth)
         else:
-            self.canvas.create_oval(x - self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x + self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, outline=self.playerColors[type - 1], width=self.markWidth)
+            self.canvas.create_oval(x - self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x + self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, outline=self.playerColors[type - 1], width=self.markLineWidth)
