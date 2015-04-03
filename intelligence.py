@@ -1,5 +1,5 @@
 import node
-import critic
+import costfunction
 
 class Intelligence:
 
@@ -7,7 +7,7 @@ class Intelligence:
     closed = []
 
     def __init__(self):
-        self.critic = critic.Critic()
+        self.costFunction = costfunction.CostFunction()
 
     def expand(self, graph):
         pass
@@ -66,4 +66,4 @@ class Intelligence:
         for cell in playState:
             playground[cell[0] - minX][cell[1] - minY] = cell[2]
 
-        return self.critic.test(playground, n)
+        return self.costFunction.test(playground, n)

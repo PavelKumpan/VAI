@@ -9,14 +9,14 @@ This module is used to render graphical user interface.
 '''
 
 class View:
-    cellWidth = 20                          # pixel width of grid cell
+    cellWidth = 30                          # pixel width of grid cell
     lineColor = "#000000"                   # color of grid line
-    lineWidth = 2                           # pixel width of grid line (this width is ad to cellWidth)
+    lineWidth = 1                           # pixel width of grid line (this width is ad to cellWidth)
     backgroundColor = "#FFFFFF"             # color of window background
     markSize = 0.5                          # width of mark in % of cell (0.5 = half of cell)
     markLineWidth = 3                       # width of mark line
     playerColors = ["#FF0000", "#0000FF"]   # colors of player marks
-    top = 50
+    top = 0
 
     player = 1
 
@@ -35,14 +35,12 @@ class View:
         self.controller_click = lambda x : 0
 
     def click(self, event):
-        x = event.x
-        y = event.y - self.top
-        x //= self.cellWidth + self.lineWidth
-        y //= self.cellWidth + self.lineWidth
+        col =  event.x             // (self.cellWidth + self.lineWidth)
+        row = (event.y - self.top) // (self.cellWidth + self.lineWidth)
 
         if hasattr(self.controller_click, '__call__'):
             try:
-                self.controller_click(x, y, self.player)
+                self.controller_click(row, col, self.player)
             finally:
                 pass
 
@@ -51,15 +49,15 @@ class View:
     def set_callback(self, func):
         self.controller_click = func
 
-    def render(self, data):
+    def render(self, data, cost):
         self.render_background()
         self.render_grid()
 
-        for x in range(0, len(data)):
-            for y in range(0, len(data[x])):
-                if data[x][y] != 0:
-                    self.render_mark(x, y, data[x][y])
-
+        for row in range(0, len(data)):
+            for col in range(0, len(data[0])):
+                if data[row][col] != 0:
+                    self.render_mark(row, col, data[row][col])
+                self.canvas.create_text(col * (self.cellWidth + self.lineWidth) + self.cellWidth / 2, self.top + (row) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2, text=str(cost[row][col]))
     def c(self):
         mainloop()
 
@@ -75,9 +73,9 @@ class View:
             y = self.top + i * (self.cellWidth + self.lineWidth)
             self.canvas.create_line(0, y, self.width, y, fill=self.lineColor, width=self.lineWidth)
 
-    def render_mark(self, u, v, type):
-        x = (u) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2;
-        y = self.top + (v) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2;
+    def render_mark(self, row, col, type):
+        x = (col) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2;
+        y = self.top + (row) * (self.cellWidth + self.lineWidth) + self.cellWidth / 2;
 
         if(type == 1):
             self.canvas.create_line(x - self.markSize / 2 * self.cellWidth, y - self.markSize / 2 * self.cellWidth, x + self.markSize / 2 * self.cellWidth, y + self.markSize / 2 * self.cellWidth, fill=self.playerColors[type - 1], width=self.markLineWidth)

@@ -1,5 +1,5 @@
-import opponent
 import intelligence
+import costfunction
 
 class Controller:
 
@@ -8,14 +8,12 @@ class Controller:
     def __init__(self, model, view):
         self.model = model
         self.view = view
-        self.opponent = opponent.Opponent()
         self.intelligence = intelligence.Intelligence()
-
+        self.costFunction = costfunction.CostFunction()
         self.player = []
 
-    def click(self, x, y, player):
-        self.model.player_click(x, y, player)
-        self.view.render(self.model.data)
-        self.player.append((x, y, player))
-
-        print(self.intelligence.testPlayState(self.player, 5))
+    def click(self, row, col, player):
+        self.model.player_click(row, col, player)
+        costs = self.costFunction.evaluate(self.model.data, 5, 2 - (player + 1) % 2)
+        self.view.render(self.model.data, costs)
+        self.player.append((row, col, player))
