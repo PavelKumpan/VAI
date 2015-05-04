@@ -1,69 +1,70 @@
-import node
 import costfunction
+import copy
 
 class Intelligence:
-
     open = []
     closed = []
 
-    def __init__(self):
-        self.costFunction = costfunction.CostFunction()
+    def __init__(self, goal = 5):
+        self.cost_function = costfunction.CostFunction()
+        self.goal = goal
+        self.depth = 3
 
-    def expand(self, graph):
-        pass
+    def cell_test(self, grid, row, col, width, height):
+        if grid[row][col] != 0:
+            return False
 
-    def alphabeta(self, alpha, beta, node):
-        '''
-        :type node node.Node
-        '''
-        if node.level == 0:
-            alpha = 2**15
-            beta = -2**15
 
-        if len(node.descendants) == 0:  # leaf
-            return self.rating(node.state)
+        neighborhood = grid[min(row + 1, height-1)][min(col + 1, width-1)] + \
+                       grid[min(row + 1, height-1)][col] + \
+                       grid[min(row + 1, height-1)][max(col - 1, 0)] + \
+                       grid[row][max(col - 1, 0)] + \
+                       grid[row][min(col + 1, width-1)] + \
+                       grid[max(row - 1, 0)][min(col + 1, width-1)] + \
+                       grid[max(row - 1, 0)][col] + \
+                       grid[max(row - 1, 0)][max(col - 1, 0)]
 
-        i = 0
-        all = []
+        return not neighborhood == 0
 
-        for i in range(0, len(node.descendants)):
-            alpha = max(alpha, max(all))
-            beta = min(beta, min(all))
-            all.append(self.alphabeta(alpha, beta, node.descendants[i]))
+    def step(self, grid, player, level, alpha, beta):
+        width = len(grid[0])
+        height = len(grid)
+        move = None
+        cut = False
+        v = (-1)**player * 2**16
 
-            if beta > alpha and node.type == 'OR':
-                return alpha
-            elif beta < alpha and node.type == 'AND':
-                return beta
+        for row in range(0, height):
+            for col in range(0, width):
+                if not self.cell_test(grid, row, col, width, height):
+                    continue
 
-        return alpha if (node.type == 'OR') else beta
+                v = self.cost_function.cost(grid, row, col, self.goal, player) * (-1)**(player+1)
+                if level < self.depth:
+                    grid[row][col] = player
+                    v += self.step(grid, 1 + (player % 2), level+1, alpha, beta)
+                    grid[row][col] = 0
 
-    def testPlayState(self, playState, n):
-        minX = 2**15
-        minY = 2**15
-        maxX = 0
-        maxY = 0
 
-        for cell in playState:
-            minX = min(minX, cell[0])
-            minY = min(minY, cell[1])
-            maxX = max(maxX, cell[0])
-            maxY = max(maxY, cell[1])
+                if player == 1:    # maximizer
+                    if v > alpha:
+                        alpha = v
+                        move = (row, col)
+                else:              # minimizer
+                    if v < beta:
+                        beta = v
+                        move = (row, col)
 
-        minX = min(minX - 2, 0)
-        minY = min(minY - 2, 0)
-        minX = min(minX + 2, 0)
-        minY = min(minY + 2, 0)
+                if alpha > beta:
+                    cut = True
+                    break
+                ############
+            if cut:
+                break
 
-        width = maxX - minX + 1
-        height = maxY - minY + 1
+        if level == 1:
+            return move
+        else:
+            return v
 
-        width = max(width, height)
-        height = max(width, height)
-
-        playground = [[0 for x in range(width)] for y in range(height)]
-
-        for cell in playState:
-            playground[cell[0] - minX][cell[1] - minY] = cell[2]
-
-        return self.costFunction.test(playground, n)
+    def alpha_beta(self, grid, player):
+        return self.step(grid, player, 1, -1 * 2**16, 2**16)

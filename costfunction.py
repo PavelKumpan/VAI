@@ -1,131 +1,155 @@
+from random import random
+
+
 class CostFunction:
-
     def __init__(self):
-        self.last = -1
-        self.defaultCost = 2
-        self.agresivity = 4 # 1 - 10
-        self.agresivityLimit = 10
-        self.stepWeight = 2
+        self.last = 0
+        self.score = {
+            'opponentEnd': 5,
+            'emptyEnd': 10,
+            'default': 15,
+            'line': 20,
+            'stepIncrement': 3}
+        self.aggressiveness = 0.3 # 1 - 10
+        self.player_wins = 2**16
+        self.in_line_a = 0
+        self.in_line_b = 0
+        self.neighbor = 0
 
-    def cellCost(self, cell, player):
-        print(cell)
-        if cell == 0:
-            return 0
-        if cell == player:
-            return self.defaultCost
-        else:
-            return -1 * self.defaultCost
-        return 0
-
-    def cost(self, playground, row, col, n, player):
-        if playground[row][col] != 0:           # in case of this cell is not empty
-            return 0
-
-        width = len(playground[0])
-        height = len(playground)
+    def dirCost(self, rows, cols, grid, player, n):
         cost = 0
+        k = 1
 
-        print(playground)
-        k = 0
+        if len(rows) == 0 or len(cols) == 0:
+            return 0
 
-        for i in range(col - 1, max(col - n, -1), -1): # left
-            cell = playground[row][i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
+        self.neighbor = grid[rows[0]][cols[0]]
+        if self.neighbor != 0:
+            for i in range(0, min(len(rows), len(cols))):
+                cell = grid[rows[i]][cols[i]]
 
-        for i in range(col + 1, min(col + n, width)): # right
-            cell = playground[row][i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
+                if cell != self.neighbor:
+                    if cell == 0:
+                        cost += self.score['emptyEnd']
+                    else:
+                        cost += self.score['opponentEnd']
+                    break
+                else:
+                    cost += k * self.score['default']
 
-        for j in range(row - 1, max(row - n, -1), -1): # up
-            cell = playground[j][col]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
+                if cell == player:
+                    self.in_line_a += 1
+                elif cell != 0:
+                    self.in_line_b += 1
 
-        for j in range(row + 1, min(row + n, height)): # down
-            cell = playground[j][col]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
+                k *= self.score['stepIncrement']
 
-        for i in range(1, n):   # left down
-            if (col - i) < 0 or (row + i) >= height:
-                break
-            cell = playground[row + i][col - i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
-
-        for i in range(1, n):   # right down
-            if (col + i) >= width or (row + i) >= height:
-                break
-            cell = playground[row + i][col + i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
-
-        for i in range(1, n):   # left up
-            if (col - i) < 0 or (row - i) < 0:
-                break
-            cell = playground[row - i][col - i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-        k = 0
-
-        for i in range(1, n):   # right up
-            if (row - i) < 0 or (col + i) >= width:
-                break
-            cell = playground[row - i][col + i]
-            c = self.cellCost(cell, player)
-            cost += c + k
-            k += self.stepWeight
-            if c <= 0:
-                break
-
+        if self.neighbor == player:
+            cost *= self.aggressiveness
+        else:
+            cost *= (1 - self.aggressiveness)
+        if cost is None:
+            cost = 0
         return cost
 
-    def evaluate(self, playground, n, player):
+    def cost(self, grid, row, col, n, player):
+        if grid[row][col] != 0:           # in case of this cell is not empty
+            return 0
+        last = 0
+        width = len(grid[0])
+        height = len(grid)
+        cost = 0
+        self.in_line_a = 0
+        self.in_line_b = 0
 
-        width = len(playground[0])
-        height = len(playground)
+        #####----------------------------------------------------
+
+        cols = range(col - 1, max(col - n, -1), -1)     # left
+        rows = [row for i in range(len(cols))]
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        cols = range(col + 1, min(col + n, width))      # right
+        rows = [row for i in range(len(cols))]
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        if max(self.in_line_a + 1, self.in_line_b + 1) >= n :
+            return self.player_wins
+        cost += self.in_line_a * self.aggressiveness * self.score['line']
+        cost += self.in_line_a * (1 - self.aggressiveness) * self.score['line']
+        self.in_line_a = 0
+        self.in_line_b = 0
+
+        #####----------------------------------------------------
+
+        rows = range(row - 1, max(row - n, -1), -1)     # down
+        cols = [col for i in range(len(rows))]
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        rows = range(row + 1, min(row + n, height))     # up
+        cols = [col for i in range(len(rows))]
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        if max(self.in_line_a + 1, self.in_line_b + 1) >= n :
+            return self.player_wins
+        cost += self.in_line_a * self.aggressiveness * self.score['line']
+        cost += self.in_line_a * (1 - self.aggressiveness) * self.score['line']
+        self.in_line_a = 0
+        self.in_line_b = 0
+
+        #####----------------------------------------------------
+
+        cols = range(col - 1, max(col - n, -1), -1)     # left
+        rows = range(row - 1, max(row - n, -1), -1)     # down
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        cols = range(col + 1, min(col + n, width))      # right
+        rows = range(row + 1, min(row + n, height))     # up
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        if max(self.in_line_a + 1, self.in_line_b + 1) >= n :
+            return self.player_wins
+        cost += self.in_line_a * self.aggressiveness * self.score['line']
+        cost += self.in_line_a * (1 - self.aggressiveness) * self.score['line']
+        self.in_line_a = 0
+        self.in_line_b = 0
+
+        #####----------------------------------------------------
+
+        cols = range(col - 1, max(col - n, -1), -1)     # left
+        rows = range(row + 1, min(row + n, height))     # up
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        cols = range(col + 1, min(col + n, width))      # right
+        rows = range(row - 1, max(row - n, -1), -1)     # down
+        cost += self.dirCost(rows, cols, grid, player, n)
+
+        if max(self.in_line_a + 1, self.in_line_b + 1) >= n :
+            return self.player_wins
+        cost += self.in_line_a * self.aggressiveness * self.score['line']
+        cost += self.in_line_a * (1 - self.aggressiveness) * self.score['line']
+        self.in_line_a = 0
+        self.in_line_b = 0
+
+        return cost + 1 / (1 + ((row - width / 2)**2 + (col - height / 2)**2)) + random()
+
+
+    def evaluate(self, grid, n, player):
+
+        width = len(grid[0])
+        height = len(grid)
         costMatrix = [[0 for x in range(width)] for y in range(height)]
 
         for i in range(0, height):
             for j in range(0, width):
-                costMatrix[i][j] =  self.agresivity * self.cost(playground, i, j, n, player) + (self.agresivityLimit - self.agresivity) * self.cost(playground, i, j, n, 2 - (player + 1) % 2)
+                costMatrix[i][j] =  self.cost(grid, i, j, n, player)
 
         return costMatrix
 
 
-    def test(self, playground, n):
+    def test(self, grid, n):
         '''
         Check if one of players has N marks in one line
-        :type playground: list
+        :type grid: list
         :type n: int
         '''
         rating = 0
@@ -134,52 +158,71 @@ class CostFunction:
         playerA = 0
         playerB = 0
 
-        height = len(playground)
-        width = len(playground[0])
+        height = len(grid)
+        width = len(grid[0])
+
+        five_a = []
+        five_b = []
 
         # horizontal searching
         for i in range(0, height):
             for j in range(0, width):
-                if playground[i][j] == 1:   # player A has this cell
+                if grid[i][j] == 1:   # player A has this cell
                     playerA += 1
                     playerB = 0
-                elif playground[i][j] == 2:
+                    five_b.clear()
+                    five_a.append((i, j))
+                elif grid[i][j] == 2:
                     playerA = 0
                     playerB += 1
+                    five_a.clear()
+                    five_b.append((i, j))
                 else:
                     playerA = 0
                     playerB = 0
+                    five_a.clear()
+                    five_b.clear()
 
                 if playerA >= n:
-                    return winPlayerA
+                    return {"winner": 1, "cells": five_a}
                 elif playerB >= n:
-                    return winPlayerB
+                    return {"winner": 2, "cells": five_b}
 
             playerB = 0
             playerA = 0
+            five_a.clear()
+            five_b.clear()
 
         self.previous = [-1]
 
         # vertical searching
         for j in range(0, width):
             for i in range(0, height):
-                if playground[i][j] == 1:   # player A has this cell
+                if grid[i][j] == 1:   # player A has this cell
                     playerA += 1
                     playerB = 0
-                elif playground[i][j] == 2:
+                    five_b.clear()
+                    five_a.append((i, j))
+                elif grid[i][j] == 2:
                     playerA = 0
                     playerB += 1
+                    five_a.clear()
+                    five_b.append((i, j))
                 else:
                     playerA = 0
                     playerB = 0
+                    five_a.clear()
+                    five_b.clear()
 
                 if playerA >= n:
-                    return winPlayerA
+                    return {"winner": 1, "cells": five_a}
                 elif playerB >= n:
-                    return winPlayerB
+                    return {"winner": 2, "cells": five_b}
 
             playerB = 0
             playerA = 0
+            five_a.clear()
+            five_b.clear()
 
         self.previous = [-1]
 
@@ -190,23 +233,31 @@ class CostFunction:
                 c = j
                 if r >= height or c >= width:
                     continue
-                if playground[r][c] == 1:   # player A has this cell
+                if grid[r][c] == 1:   # player A has this cell
                     playerA += 1
                     playerB = 0
-                elif playground[r][c] == 2:
+                    five_b.clear()
+                    five_a.append((r, c))
+                elif grid[r][c] == 2:
                     playerA = 0
                     playerB += 1
+                    five_a.clear()
+                    five_b.append((r, c))
                 else:
                     playerA = 0
                     playerB = 0
+                    five_a.clear()
+                    five_b.clear()
 
                 if playerA >= n:
-                    return winPlayerA
+                    return {"winner": 1, "cells": five_a}
                 elif playerB >= n:
-                    return winPlayerB
+                    return {"winner": 2, "cells": five_b}
 
             playerB = 0
             playerA = 0
+            five_a.clear()
+            five_b.clear()
 
         self.previous = [-1]
 
@@ -218,22 +269,30 @@ class CostFunction:
                 if r >= height or c >= width:
                     continue
 
-                if playground[r][c] == 1:   # player A has this cell
+                if grid[r][c] == 1:   # player A has this cell
                     playerA += 1
                     playerB = 0
-                elif playground[r][c] == 2:
+                    five_b.clear()
+                    five_a.append((r, c))
+                elif grid[r][c] == 2:
                     playerA = 0
                     playerB += 1
+                    five_a.clear()
+                    five_b.append((r, c))
                 else:
                     playerA = 0
                     playerB = 0
+                    five_a.clear()
+                    five_b.clear()
 
                 if playerA >= n:
-                    return winPlayerA
+                    return {"winner": 1, "cells": five_a}
                 elif playerB >= n:
-                    return winPlayerB
+                    return {"winner": 2, "cells": five_b}
 
             playerB = 0
             playerA = 0
+            five_a.clear()
+            five_b.clear()
 
-        return rating
+        return {"winner": 0, "cells": []}
